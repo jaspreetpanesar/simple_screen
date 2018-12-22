@@ -156,7 +156,7 @@ def readUserInput(prompt):
     try:
         return raw_input(prompt)
     except (EOFError, KeyboardInterrupt):
-        raise UnrecognisedSelectionException("Selection interrupted")
+        raise UnrecognisedSelectionException("Input interrupted")
 
 
 def readConfirmInput():
