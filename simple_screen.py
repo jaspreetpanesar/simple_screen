@@ -21,66 +21,38 @@ class TooManyScreensException(Exception):
     one screens open"""
     pass
 
+class UnrecognisedSelectionException(Exception):
+    """exception to identify that selection made from
+    user was unrecognised/incorrect"""
+    pass
+
 
 class Screen(object):
     """used to interface with screen sessions
 
     Params:
-        name (string): session name
+        name (string, optional): session name, defaults to DEFAULT_SESSION_NAME
+        id (string, optional): screen session id
     """
 
-    def __init__(self, name):
+    def __init__(self, name=DEFAULT_SESSION_NAME, id=None):
         self.name = name
-
-
-    def reattach(self):
-        """reattach screen to running session"""
-        print("reattaching to session '%s'" %self.name)
-        self.runCmd("-r")
-
-
-    def create(self):
-        """create new session and attach"""
-        print("creating new session '%s'" %self.name)
-        self.runCmd("-S")
-
-
-    def runCmd(self, args):
-        """run screen command with required parameters and
-        session name"""
-        cmd = "screen " + args + " " +self.name
-        os.system(cmd)
+        self.id = id
 
 
     def run(self):
-        """used to run appropriate session connecting
-        command based on name"""
-        if Screen.doesExists(self.name):
-            self.reattach()
-        else:
-            self.create()
+        """attach to screen with name, detach if necessary,
+        create new if necessary"""
+        os.system("screen -D -R %s" %self.name)
+
+
+    def kill(self):
+        """kill the screen session"""
+        os.system("screen -X -S %s quit" %self.name)
 
 
     def __repr__(self):
-        return "<Screen(name=%s)>" %(self.name)
-
-
-    @staticmethod
-    def doesExists(name):
-        """returns if screen with name is 
-        currently running.
-
-        Args:
-            name (str): the name of the screen session
-
-        Returns:
-            bool: if screen with session name is currently
-                running
-        """
-        for i in Screen.getExistingScreens():
-            if i["name"] == name:
-                return True
-        return False
+        return "<Screen(name=%s, id=%s)>" %(self.name, self.id)
 
 
     @staticmethod
@@ -88,9 +60,8 @@ class Screen(object):
         """returns which screens are currently running
 
         Returns:
-            dict (name, process_id): a dictionary of currently
-                running screens identified with their name, and
-                their process id
+            array (Screen obj): an array of currently running screens 
+                objects
         """
         try:
             out = subprocess.check_output(["screen", "-ls"])
@@ -113,17 +84,18 @@ class Screen(object):
                 # sessions identifiers are written as id.name
                 if "." in j:
                     s = j.split(".")
-                    screen_list.append( {"id": s[0], "name": s[1]} )
+                    screen_list.append( Screen(name=s[1], id=s[0]) )
 
         return screen_list
 
 
 
-def main(name, *args, **kwargs):
+def connectSession(name):
     """run screen command based on cli parameters
 
     Args:
-        name (string or None): used defined session name, can be None
+        name (string or None): used defined session name, 
+            can be None
         *args
         *kwargs
 
@@ -139,13 +111,14 @@ def main(name, *args, **kwargs):
     screens = Screen.getExistingScreens()
     if not name:
         if len(screens) == 0:
-            name = DEFAULT_SESSION_NAME
+            s = Screen()
         elif len(screens) == 1:
-            name = screens[0]["name"]
+            s = screens[0]
         else:
             raise TooManyScreensException(screens)
+    else:
+        s = Screen(name=name)
 
-    s = Screen(name)
     s.run()
 
 
@@ -154,14 +127,170 @@ def printScreenList(screens):
     print screen list on screen with list number
     for easy distinction (list numbers start
     from 1)
+
+    Args:
+        screens (array, Screen Obj): list of screen objects
+            to list to to the user.
     """
     if len(screens) > 0:
         count = 1
-        for i in screens:
-            print("\t#%s %s" %(count,i["name"]))
+        for s in screens:
+            print("\t#%s %s" %(count,s.name))
             count += 1
     else:
         print("no open sessions")
+
+
+def readUserInput(prompt):
+    """read input from the user
+
+    Args:
+        prompt (string): the prompt to show user
+
+    Raises:
+        UnrecognisedSelectionException: if input is suspended
+            by user
+    """
+    try:
+        return raw_input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        raise UnrecognisedSelectionException("Selection interrupted")
+
+
+def readConfirmInput():
+    """asks user for confirmation
+    
+    Returns:
+        bool: True if user confirms, False if doesn't
+    """
+    try:
+        result = readUserInput("(y/n): ")   # UnrecognisedSelectionException
+        return 'y' in result[0].lower()     # IndexError
+    except (UnrecognisedSelectionException, IndexError) as e:
+        return False
+
+
+def readSelectionInput(msg, screens):
+    """read screen selection from user and
+    return the selected screen
+
+    Args:
+        msg (string): message to show to user
+        screens (array, Screen obj): array of screens for
+            user to select from
+
+    Returns:
+        Screen (obj): returns the selected screen
+
+    Raises:
+        UnrecognisedSelectionException: if user 
+            makes incorrect selection.
+    """
+    # don't run selection dialogue if less than 2 sessions running
+    if len(screens) == 1:
+        return screens[0]
+    if len(screens) == 0:
+        return None
+
+    # print screen list for user
+    print(msg)
+    printScreenList(screens)
+
+    # handle user input and determine selection
+    sln = readUserInput("#: ")
+    try:
+        return screens[int(sln)-1]
+    except IndexError as e:
+        raise UnrecognisedSelectionException("Selection out of range")
+    except (TypeError, ValueError):
+        raise UnrecognisedSelectionException("Selection not recognised")
+
+
+def listSessions():
+    """list running screen session for user"""
+    screens = Screen.getExistingScreens()
+    printScreenList(screens)
+
+
+def killSession():
+    """run kill session dialogue"""
+
+    # TODO add option to read session name as parameter (use args.name)
+
+    screens = Screen.getExistingScreens()
+    try:
+        screen = readSelectionInput("Please enter session number to kill:", screens)
+        if screen:
+            print("Are you sure you want to kill session %s ?" %screen.name)
+            if readConfirmInput():
+                screen.kill()
+                print("%s session killed" %screen.name)
+            else:
+                print("session kill aborted")
+        else:
+            print("No sessions found")
+
+    except UnrecognisedSelectionException as e:
+        print("Error: %s" %e)
+
+
+def killAllSessions():
+    """run kill all sessions dialogue"""
+    screens = Screen.getExistingScreens()
+    if len(screens) > 0:
+        print("Are you sure you want to kill all sessions?")
+        if readConfirmInput():
+            for s in screens:
+                s.kill()
+            print("all sessions killed")
+        else:
+            print("session kill aborted")
+    else:
+        print("No sessions found")
+
+
+def runConnect(name):
+    """run screen connection function
+    
+    Args:
+        name (string): session name of new or running session
+    """
+    try:
+        connectSession(name=name)
+    except TooManyScreensException as e:
+        # when multiple screens running, have user select one
+        try:
+            screen = readSelectionInput("Please enter session number to reattach:", e.args[0])
+            screen.run()
+        except UnrecognisedSelectionException as e:
+            print("Error: %s" %e)
+
+
+def main(args):
+    """runs functions based on argument and main
+    function of connection to screen session
+
+    Args:
+        args (parser arguments): arguments provided by user when
+            running the program
+    """
+    # list sessions - print list, quit early
+    if args.l:
+        listSessions()
+        return
+
+    # kill session - show list, then quit
+    if args.k:
+        killSession()
+        return
+
+    # kill all sessions - ask for confirmation, then quit
+    if args.K:
+        killAllSessions()
+        return
+
+    # connect to screen
+    runConnect(args.name)
 
 
 
@@ -171,28 +300,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Connect to GNU Screen")
     parser.add_argument("name", metavar="n", nargs="?", type=str, help="the name of screen session")
     parser.add_argument("-l", action="store_true", help="list all open sessions")
+    parser.add_argument("-k", action="store_true", help="kill a session")
+    parser.add_argument("-K", action="store_true", help="kill all sessions")
     args = parser.parse_args()
 
-    # show list, quit early
-    if args.l:
-        screens = Screen.getExistingScreens()
-        printScreenList(screens)
-        sys.exit()
+    main(args)
 
-    try:
-        main(name=args.name)
-    except TooManyScreensException as e:
-        screens = e.args[0]
-        # print screen list for user
-        print("Please select session name when reattaching:")
-        printScreenList(screens)
-
-        # read selection from user
-        sln = raw_input("#: ")
-        try:
-            main(name=screens[int(sln)-1]["name"])
-        except IndexError:
-            print("Error: Selection out of range")
-        except (TypeError, ValueError):
-            print("Error: Selection not recognised")
 
