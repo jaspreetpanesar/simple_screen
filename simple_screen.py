@@ -31,7 +31,8 @@ class Screen(object):
     """used to interface with screen sessions
 
     Params:
-        name (string, optional): session name, defaults to DEFAULT_SESSION_NAME
+        name (string, optional): session name, defaults 
+            to DEFAULT_SESSION_NAME
         id (string, optional): screen session id
     """
 
@@ -78,7 +79,8 @@ class Screen(object):
 
         screen_list = []
         for i in out:
-            # split session line into seperate components (identifier~date~status)
+            # split session line into seperate components 
+            # (identifier~date~status)
             i = i.split("~")
             for j in i:
                 # sessions identifiers are written as id.name
@@ -212,14 +214,25 @@ def listSessions():
     printScreenList(screens)
 
 
-def killSession():
-    """run kill session dialogue"""
-
-    # TODO add option to read session name as parameter (use args.name)
-
+def killSession(name=None):
+    """allows user to kill running session
+    
+    Args:
+        name (string, optional): name of session to kill, can be None to 
+            show kill list prompt to user
+    """
     screens = Screen.getExistingScreens()
     try:
-        screen = readSelectionInput("Please enter session number to kill:", screens)
+        # if name is specified find proceed with that screen, 
+        # else show prompt to user
+        screen = None
+        if name:
+            for s in screens:
+                if name == s.name:
+                    screen = s
+        if not screen:
+            screen = readSelectionInput("Please enter session number to kill:", screens)
+
         if screen:
             print("Are you sure you want to kill session %s ?" %screen.name)
             if readConfirmInput():
@@ -235,7 +248,7 @@ def killSession():
 
 
 def killAllSessions():
-    """run kill all sessions dialogue"""
+    """allows user to kill all running sessions"""
     screens = Screen.getExistingScreens()
     if len(screens) > 0:
         print("Are you sure you want to kill all sessions?")
@@ -281,7 +294,7 @@ def main(args):
 
     # kill session - show list, then quit
     if args.k:
-        killSession()
+        killSession(args.name)
         return
 
     # kill all sessions - ask for confirmation, then quit
