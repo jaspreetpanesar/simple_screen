@@ -49,7 +49,7 @@ class Screen(object):
 
     def kill(self):
         """kill the screen session"""
-        os.system("screen -X -S %s quit" %self.name)
+        os.system("screen -X -S %s quit" %self.id)
 
 
     def __repr__(self):
@@ -137,7 +137,7 @@ def printScreenList(screens):
     if len(screens) > 0:
         count = 1
         for s in screens:
-            print("\t#%s %s" %(count,s.name))
+            print("\t#%s %s (%s)" %(count, s.name, s.id))
             count += 1
     else:
         print("no open sessions")
@@ -230,6 +230,7 @@ def killSession(name=None):
             for s in screens:
                 if name == s.name:
                     screen = s
+                    break
         if not screen:
             screen = readSelectionInput("Please enter session number to kill:", screens)
 
@@ -288,17 +289,17 @@ def main(args):
             running the program
     """
     # list sessions - print list, quit early
-    if args.l:
+    if args.list:
         listSessions()
         return
 
     # kill session - show list, then quit
-    if args.k:
+    if args.kill:
         killSession(args.name)
         return
 
     # kill all sessions - ask for confirmation, then quit
-    if args.K:
+    if args.killall:
         killAllSessions()
         return
 
@@ -309,12 +310,12 @@ def main(args):
 
 if __name__ == "__main__":
 
-    # setup arg parser
+    # setup command line argument parser
     parser = argparse.ArgumentParser(description="Connect to GNU Screen")
     parser.add_argument("name", metavar="n", nargs="?", type=str, help="the name of screen session")
-    parser.add_argument("-l", action="store_true", help="list all open sessions")
-    parser.add_argument("-k", action="store_true", help="kill a session")
-    parser.add_argument("-K", action="store_true", help="kill all sessions")
+    parser.add_argument("-l", "--list", action="store_true", help="list all open sessions")
+    parser.add_argument("-k", "--kill", action="store_true", help="kill a session")
+    parser.add_argument("-K", "--killall", action="store_true", help="kill all sessions")
     args = parser.parse_args()
 
     main(args)
