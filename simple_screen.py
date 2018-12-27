@@ -120,7 +120,8 @@ class Screen(object):
 
 
     def __repr__(self):
-        return "<Screen(name=%s, id=%s, status=%s)>" %(self.name, self.id, self.getStatus())
+        return "<Screen(name=%s, id=%s, status=%s)>" %(self.name, self.id, 
+                                            self.getStatus())
 
 
     @staticmethod
