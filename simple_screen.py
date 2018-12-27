@@ -6,7 +6,7 @@
 Shortcut script for quickly opening and reopening screen sessions 
 """
 
-import os, sys, argparse, subprocess
+import os, sys, argparse, subprocess, difflib
 
 
 __author__ = "Jaspreet Panesar"
@@ -26,6 +26,21 @@ class UnrecognisedSelectionException(Exception):
     user was unrecognised/incorrect"""
     pass
 
+class ScreenSessionUnreachableException(Exception):
+    """exception to identify if screen session is 
+    unreachable when trying to connect to it"""
+    pass
+
+class ScreenConnectionFailedException(Exception):
+    """exception to identify if screen session could
+    not be created or connected to"""
+    pass
+
+class IncorrectSessionName(Exception):
+    """exception to identify if session name provided
+    by user does not match required criteria"""
+    pass
+
 
 class Screen(object):
     """used to interface with screen sessions
@@ -34,26 +49,78 @@ class Screen(object):
         name (string, optional): session name, defaults 
             to DEFAULT_SESSION_NAME
         id (string, optional): screen session id
+        status (string, optional): status of screen (used to determine status value, stored
+            as constant int)
     """
 
-    def __init__(self, name=DEFAULT_SESSION_NAME, id=None):
+    UNKNOWN = 0
+    ATTACHED = 1
+    DETACHED = 2
+    MULTI = 3
+    UNREACHABLE = 4
+    DEAD = 5
+
+    STATUSES = ["unknown", "attached", "detached", "multi", "unreachable", "dead"]
+
+    def __init__(self, name=DEFAULT_SESSION_NAME, id=None, status=None):
         self.name = name
         self.id = id
 
+        if status:
+            self.status = Screen.STATUSES.index(difflib.get_close_matches(status, 
+                    Screen.STATUSES)[0])
+        else:
+            self.status = Screen.UNKNOWN
 
-    def run(self):
-        """attach to screen with name, detach if necessary,
+
+    def create(self):
+        """creates new screen session and detaches from it"""
+        os.system("screen -d -m %s" %self.name)
+
+
+    def connect(self):
+        """connect to screen with name, detach if necessary,
         create new if necessary"""
-        os.system("screen -D -R %s" %self.name)
+
+        # if status unknown use only name to connect, else use
+        # both id.name 
+
+        if self.status == Screen.UNKNOWN:
+            os.system("screen -D -R %s" %self.name)
+        elif self.status not in [Screen.UNREACHABLE, Screen.DEAD]:
+            os.system("screen -D -R %s.%s" %(self.id, self.name))
+        else:
+            raise ScreenSessionUnreachableException
 
 
     def kill(self):
         """kill the screen session"""
-        os.system("screen -X -S %s quit" %self.id)
+        # wipe if dead, quit if running
+        if self.status in [Screen.DEAD, Screen.UNREACHABLE]:
+            os.system("screen -wipe %s.%s" %(self.id, self.name)) 
+        else:
+            os.system("screen -X -S %s quit" %self.id)
+
+
+    def run(self):
+        """use correct connection command depending on status of
+        screen session"""
+        if self.status == Screen.UNKNOWN:
+            self.create()
+        elif self.status in [Screen.DEAD, Screen.UNREACHABLE]:
+            self.kill()
+            raise ScreenConnectionFailedException
+        self.connect()
+
+
+    def getStatus(self):
+        """returns the string representation of screen 
+        status value"""
+        return Screen.STATUSES[self.status]
 
 
     def __repr__(self):
-        return "<Screen(name=%s, id=%s)>" %(self.name, self.id)
+        return "<Screen(name=%s, id=%s, status=%s)>" %(self.name, self.id, self.getStatus())
 
 
     @staticmethod
@@ -74,19 +141,18 @@ class Screen(object):
         out = out.replace("\r", "")
         out = out.split("\n")
 
-        # keep only session names from output  
+        # remove header and footer - keep only session list
         out = out[1:-2]
 
         screen_list = []
         for i in out:
-            # split session line into seperate components 
-            # (identifier~date~status)
+            # split session line into components (''~identifier~date~status)
             i = i.split("~")
-            for j in i:
-                # sessions identifiers are written as id.name
-                if "." in j:
-                    s = j.split(".")
-                    screen_list.append( Screen(name=s[1], id=s[0]) )
+            
+            # can skip i[0] (empty) and i[2] (timestamp)
+            id, name = i[1].split(".")
+            status = i[3].replace("(","").replace(")","").lower()
+            screen_list.append( Screen(name=name, id=id, status=status) )
 
         return screen_list
 
@@ -137,7 +203,7 @@ def printScreenList(screens):
     if len(screens) > 0:
         count = 1
         for s in screens:
-            print("\t#%s %s (%s)" %(count, s.name, s.id))
+            print("\t#%s %s (%s)\t[%s]" %(count, s.name, s.id, s.getStatus()))
             count += 1
     else:
         print("no open sessions")
@@ -268,7 +334,13 @@ def runConnect(name):
     
     Args:
         name (string): session name of new or running session
+
+    Raises:
+        IncorrectSessionName: if session name begins with numeric character
     """
+    if name and len(name) > 0 and name[0].isdigit():
+        raise IncorrectSessionName("session name must not begin with numeric character")
+
     try:
         connectSession(name=name)
     except TooManyScreensException as e:
@@ -304,7 +376,10 @@ def main(args):
         return
 
     # connect to screen
-    runConnect(args.name)
+    try:
+        runConnect(args.name)
+    except IncorrectSessionName as e:
+        print("Error: %s" %e)
 
 
 
