@@ -80,7 +80,12 @@ class Screen(object):
 
     def connect(self):
         """connect to screen with name, detach if necessary,
-        create new if necessary"""
+        create new if necessary
+
+        Raises:
+            ScreenSessionUnreachableException: if connection to screen
+                cannot be made.
+        """
 
         # if status unknown use only name to connect, else use
         # both id.name 
@@ -104,7 +109,12 @@ class Screen(object):
 
     def run(self):
         """use correct connection command depending on status of
-        screen session"""
+        screen session
+        
+        Raises:
+            ScreenConnectionFailedException: if screen session had
+                to be wiped due to dead or unreachable session.
+        """
         if self.status == Screen.UNKNOWN:
             self.create()
         elif self.status in [Screen.DEAD, Screen.UNREACHABLE]:
@@ -115,7 +125,11 @@ class Screen(object):
 
     def getStatus(self):
         """returns the string representation of screen 
-        status value"""
+        status value
+        
+        Returns:
+            String: human readable session status.
+        """
         return Screen.STATUSES[self.status]
 
 
@@ -130,12 +144,12 @@ class Screen(object):
 
         Returns:
             array (Screen obj): an array of currently running screens 
-                objects
+                objects.
         """
         try:
             out = subprocess.check_output(["screen", "-ls"])
         except subprocess.CalledProcessError:
-            return {}
+            return []
 
         # remove invisibles from output, and split lines  
         out = out.replace("\t", "~")
@@ -165,8 +179,6 @@ def connectSession(name):
     Args:
         name (string or None): used defined session name, 
             can be None
-        *args
-        *kwargs
 
     Raises:
         TooManyScreensException: raised if name is None and there is
@@ -215,6 +227,9 @@ def readUserInput(prompt):
 
     Args:
         prompt (string): the prompt to show user
+
+    Returns:
+        string: user input
 
     Raises:
         UnrecognisedSelectionException: if input is suspended
