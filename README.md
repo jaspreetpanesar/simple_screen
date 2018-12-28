@@ -10,21 +10,26 @@ Make sure you have Python (version 2.7) installed.
 
 
 ### Installation
-To install the script, follow the steps below:  
+To install the script, follow the steps listed below:  
 
 1.  Clone this repository into your preferred directory.  
     ```
     git clone [link to this repository]
     ```
 
-2.  Create an entry in your .bashrc with alias pointing to simple_screen.py scipt.  
+2.  Create an entry in your .bashrc with an alias pointing to the simple_screen.py scipt.  
     ```
-    alias ss='python /path/to/simple_screen.py'
+    alias ss='python /path/to/simple_screen/simple_screen.py'
     ```
 
-3.  Run Simple Screen.
+3.  Reload bashrc file.
     ```
-    ss
+    source ~/.bashrc
+    ```
+
+4.  Run Simple Screen.
+    ```
+    ss 
     ```
 
 ## Author
