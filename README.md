@@ -32,6 +32,14 @@ To install the script, follow the steps listed below:
     ss 
     ```
 
+### More Features
+Additionally, you can add the following code to the end of your .bashrc to automatically connect to a new or detached screen session when starting a new shell.
+```
+if [ "$STY" == "" ]; then
+    python /path/to/simple_screen/simple_screen.py
+fi
+```
+
 ## Author
 Jaspreet Panesar 
 
