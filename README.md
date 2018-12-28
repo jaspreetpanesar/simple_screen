@@ -14,7 +14,7 @@ To install the script, follow the steps listed below:
 
 1.  Clone this repository into your preferred directory.  
     ```
-    git clone [link to this repository]
+    git clone https://github.com/jaspreetpanesar/simple_screen.git
     ```
 
 2.  Create an entry in your .bashrc with an alias pointing to the simple_screen.py scipt.  
