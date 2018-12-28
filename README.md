@@ -1,6 +1,6 @@
 # SIMPLE SCREEN
 
-A simple wrapper around linux screen GNU to quickly start and reattach to screens without any hassle.
+A simple wrapper around linux screen GNU to simplify starting and resuming screen sessions.
 
 ## Getting Started
 The following examples will show you how to install and setup the simple_screen script to easily use it from the commandline.

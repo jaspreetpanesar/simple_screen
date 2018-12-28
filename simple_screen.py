@@ -3,7 +3,8 @@
 """
 **Simple Screen**
 
-Shortcut script for quickly opening and reopening screen sessions 
+A wrapper around screen GNU to simplify starting and resuming
+screen sessions.
 """
 
 import os, sys, argparse, subprocess, difflib
