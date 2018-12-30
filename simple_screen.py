@@ -215,7 +215,7 @@ def printScreenList(screens):
     if len(screens) > 0:
         count = 1
         for s in screens:
-            print("\t#%s %s (%s)\t[%s]" %(count, s.name, s.id, s.getStatus()))
+            print("    #%s %s" %(count, s.name))
             count += 1
     else:
         print("no open sessions")
