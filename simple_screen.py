@@ -160,12 +160,14 @@ class Screen(object):
 
         screen_list = []
         for i in out:
-            # split session line into components (''~identifier~date~status)
-            i = i.split("~")
-            
-            # can skip i[0] (empty) and i[2] (timestamp)
-            id, name = i[1].split(".")
-            status = i[3].replace("(","").replace(")","").lower()
+            try:
+                # split session line into components (''~identifier~date~status)
+                i = i.split("~")
+                # can skip i[0] (empty) and i[2] (timestamp)
+                id, name = i[1].split(".")
+                status = i[3].replace("(","").replace(")","").lower()
+            except ValueError as e:
+                continue
             screen_list.append( Screen(name=name, id=id, status=status) )
 
         return screen_list
