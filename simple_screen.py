@@ -179,8 +179,8 @@ class Screen(object):
 
     @staticmethod
     def changeDirectory(newdir):
-        """changes the screens directory to current
-        directory
+        """changes the screens default directory to 
+        specified directory
         
         Args:
             dirc (string): string directory path
