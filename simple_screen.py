@@ -438,7 +438,6 @@ def updateDirectory(newdir=None):
             newdir = os.environ["PWD"]
         if not os.path.isdir(newdir):
             raise ValueError("Directory does not exist")
-        print(newdir)
         Screen.changeDirectory(newdir)
         print("Success: directory changed to '%s'" %newdir) 
     except KeyError:
