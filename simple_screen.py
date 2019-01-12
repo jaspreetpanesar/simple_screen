@@ -40,6 +40,11 @@ class IncorrectSessionName(Exception):
     by user does not match required criteria"""
     pass
 
+class NoConnectedSessions(Exception):
+    """exception to identify no attached screen 
+    session""" 
+    pass
+
 
 class Screen(object):
     """used to interface with screen sessions
@@ -171,6 +176,28 @@ class Screen(object):
             screen_list.append( Screen(name=name, id=id, status=status) )
 
         return screen_list
+
+    @staticmethod
+    def changeDirectory(newdir):
+        """changes the screens directory to current
+        directory
+        
+        Args:
+            dirc (string): string directory path
+        
+        Raises:
+            NoConnectedSessions: currently not connected to
+                any screen sessions.
+        """
+        # $STY stores current screen session
+        try:
+            if os.environ["STY"]:
+                os.system("screen -X chdir '%s'" %newdir)
+                return
+        except KeyError as e:
+            pass
+        # raises error if no environment variable or STY string is empty
+        raise NoConnectedSessions("Not in screen session")
 
 
 
@@ -369,6 +396,25 @@ def runConnect(name):
             print("Error: %s" %e)
 
 
+def updateDirectory(newdir=None):
+    """update the default directory of the current
+    screen session
+    
+    Args:
+        newdir (string, optional): specifies the new directory
+            if no directory provided, uses current directory
+    """
+    try:
+        if not newdir:
+            newdir = os.environ["PWD"]
+        Screen.changeDirectory(newdir)
+        print("Success: directory changed to '%s'" %newdir) 
+    except NoConnectedSessions as e:
+        print("Error: %s" %e)
+    except TypeError:
+        print("Error: could not get current directory")
+
+
 def main(args):
     """runs functions based on argument and main
     function of connection to screen session
@@ -377,6 +423,11 @@ def main(args):
         args (parser arguments): arguments provided by user when
             running the program
     """
+    # change to current directory
+    if args.directory:
+        updateDirectory()
+        return
+
     # list sessions - print list, quit early
     if args.list:
         listSessions()
@@ -408,6 +459,7 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--list", action="store_true", help="list all open sessions")
     parser.add_argument("-k", "--kill", action="store_true", help="kill a session")
     parser.add_argument("-K", "--killall", action="store_true", help="kill all sessions")
+    parser.add_argument("-d", "--directory", action="store_true", help="set current directory as main directory")
     args = parser.parse_args()
 
     main(args)
