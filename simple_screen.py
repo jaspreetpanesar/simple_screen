@@ -177,6 +177,7 @@ class Screen(object):
 
         return screen_list
 
+
     @staticmethod
     def changeDirectory(newdir):
         """changes the screens default directory to 
@@ -189,15 +190,43 @@ class Screen(object):
             NoConnectedSessions: currently not connected to
                 any screen sessions.
         """
+        if Screen.inSession():
+            os.system("screen -X chdir '%s'" %newdir)
+        else:
+            raise NoConnectedSessions("Not in screen session")
+
+
+    @staticmethod
+    def inSession():
+        """returns weather currently attached to a screen
+        session
+        
+        Returns:
+            bool: True if in session, False if not
+        """
         # $STY stores current screen session
         try:
-            if os.environ["STY"]:
-                os.system("screen -X chdir '%s'" %newdir)
-                return
+            return os.environ["STY"] != ""
         except KeyError as e:
-            pass
-        # raises error if no environment variable or STY string is empty
-        raise NoConnectedSessions("Not in screen session")
+            return False
+
+
+    @staticmethod
+    def getCurrentSession():
+        """returns current sessions screen object
+        
+        Returns:
+            Screen (obj): the currently connected session
+        
+        Raises:
+            NoConnectedSessions: if no attached session
+        """
+        if Screen.inSession():
+            session = os.environ["STY"]
+            id, name = session.split(".")
+            return Screen(name=name, id=id, status="attached")
+        else:
+            raise NoConnectedSessions("Not in screen session")
 
 
 
@@ -409,12 +438,30 @@ def updateDirectory(newdir=None):
             newdir = os.environ["PWD"]
         if not os.path.isdir(newdir):
             raise ValueError("Directory does not exist")
+        print(newdir)
         Screen.changeDirectory(newdir)
         print("Success: directory changed to '%s'" %newdir) 
     except KeyError:
         print("Error: could not get current directory")
     except (ValueError, NoConnectedSessions) as e:
         print("Error: %s" %e)
+
+
+def detachSession(session=None):
+    """detaches from a screen session
+    
+    Args:
+        name (string, optional): the name of the session
+            to detach from. If none provided, uses currently
+            attached session
+    """
+    if not session:
+        try:
+            session = Screen.getCurrentSession()
+        except NoConnectedSessions as e:
+            print("Error: %s" %e)
+            return
+    os.system("screen -D %s.%s" %(session.id, session.name))
 
 
 def main(args):
@@ -425,11 +472,17 @@ def main(args):
         args (parser arguments): arguments provided by user when
             running the program
     """
+    # detach from current session
+    if args.detach:
+        detachSession()
+        return
+
+    # set default directory to specified
     if args.changeDirectory:
         updateDirectory(args.changeDirectory)
         return
 
-    # change to current directory
+    # set default directory to current
     if args.directory:
         updateDirectory()
         return
@@ -467,6 +520,7 @@ if __name__ == "__main__":
     parser.add_argument("-K", "--killall", action="store_true", help="kill all sessions")
     parser.add_argument("-d", "--directory", action="store_true", help="set current directory as main directory")
     parser.add_argument("-cd", "--changeDirectory", type=str, help="set directory to provided value")
+    parser.add_argument("-x", "--detach", action="store_true", help="detaches from current session")
     args = parser.parse_args()
 
     main(args)
