@@ -407,12 +407,14 @@ def updateDirectory(newdir=None):
     try:
         if not newdir:
             newdir = os.environ["PWD"]
+        if not os.path.isdir(newdir):
+            raise ValueError("Directory does not exist")
         Screen.changeDirectory(newdir)
         print("Success: directory changed to '%s'" %newdir) 
-    except NoConnectedSessions as e:
-        print("Error: %s" %e)
-    except TypeError:
+    except KeyError:
         print("Error: could not get current directory")
+    except (ValueError, NoConnectedSessions) as e:
+        print("Error: %s" %e)
 
 
 def main(args):
@@ -423,6 +425,10 @@ def main(args):
         args (parser arguments): arguments provided by user when
             running the program
     """
+    if args.changeDirectory:
+        updateDirectory(args.changeDirectory)
+        return
+
     # change to current directory
     if args.directory:
         updateDirectory()
@@ -460,6 +466,7 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--kill", action="store_true", help="kill a session")
     parser.add_argument("-K", "--killall", action="store_true", help="kill all sessions")
     parser.add_argument("-d", "--directory", action="store_true", help="set current directory as main directory")
+    parser.add_argument("-cd", "--changeDirectory", type=str, help="set directory to provided value")
     args = parser.parse_args()
 
     main(args)
