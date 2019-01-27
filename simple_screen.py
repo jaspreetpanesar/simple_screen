@@ -136,6 +136,19 @@ class Screen(object):
         """
         return Screen.STATUSES[self.status]
 
+    
+    def getStatusIcon(self):
+        """returns the icon represetation of screen
+        status value
+
+        Returns:
+            String: icon representation of status
+        """
+        try:
+            return ["?", ">", "#", ">", "?", "X"][self.status]
+        except IndexError:
+            return "?"
+
 
     def __repr__(self):
         return "<Screen(name=%s, id=%s, status=%s)>" %(self.name, self.id, 
@@ -279,7 +292,7 @@ def printScreenList(screens):
     if len(screens) > 0:
         count = 1
         for s in screens:
-            print("    #%s %s (%s)" %(count, s.name, s.id))
+            print("    %s%s %s (%s)" %(s.getStatusIcon(), count, s.name, s.id))
             count += 1
     else:
         print("no open sessions")
