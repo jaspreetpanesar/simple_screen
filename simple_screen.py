@@ -168,11 +168,15 @@ class Screen(object):
             # split session line into components (''~identifier~date~status)
             i = i.split("~")
 
-            # split id and name by period
-            vals = i[1].split(".")
-            id = vals[0]
-            # join remaining name using periods which existed before split
-            name = ".".join(vals[1:])
+            try:
+                # split id and name by period
+                vals = i[1].split(".")
+                id = vals[0]
+                # join remaining name using periods which existed before split
+                name = ".".join(vals[1:])
+            except Exception as e:
+                print("Error: %s" %e)
+                continue
 
             status = i[3].replace("(","").replace(")","").lower()
             screen_list.append( Screen(name=name, id=id, status=status) )
