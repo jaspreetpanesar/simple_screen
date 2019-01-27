@@ -165,14 +165,16 @@ class Screen(object):
 
         screen_list = []
         for i in out:
-            try:
-                # split session line into components (''~identifier~date~status)
-                i = i.split("~")
-                # can skip i[0] (empty) and i[2] (timestamp)
-                id, name = i[1].split(".")
-                status = i[3].replace("(","").replace(")","").lower()
-            except ValueError as e:
-                continue
+            # split session line into components (''~identifier~date~status)
+            i = i.split("~")
+
+            # split id and name by period
+            vals = i[1].split(".")
+            id = vals[0]
+            # join remaining name using periods which existed before split
+            name = ".".join(vals[1:])
+
+            status = i[3].replace("(","").replace(")","").lower()
             screen_list.append( Screen(name=name, id=id, status=status) )
 
         return screen_list
@@ -273,7 +275,7 @@ def printScreenList(screens):
     if len(screens) > 0:
         count = 1
         for s in screens:
-            print("    #%s %s" %(count, s.name))
+            print("    #%s %s (%s)" %(count, s.name, s.id))
             count += 1
     else:
         print("no open sessions")
