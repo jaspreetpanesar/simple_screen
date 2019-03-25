@@ -5,7 +5,11 @@ A wrapper around screen GNU to simplify starting and resuming
 screen sessions.
 """
 
-import os, sys, argparse, subprocess, difflib
+import os
+import sys
+import argparse
+import subprocess
+import difflib
 
 
 __author__ = "Jaspreet Panesar"
@@ -455,6 +459,8 @@ def updateDirectory(newdir=None):
     try:
         if not newdir:
             newdir = os.environ["PWD"]
+        else:
+            newdir = os.path.abspath(os.path.realpath(newdir))
         if not os.path.isdir(newdir):
             raise ValueError("Directory does not exist")
         Screen.changeDirectory(newdir)
