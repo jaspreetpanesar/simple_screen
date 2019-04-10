@@ -127,7 +127,10 @@ class Screen(object):
             self.create()
         elif self.status in [Screen.DEAD, Screen.UNREACHABLE]:
             self.kill()
-            raise ScreenConnectionFailedException
+            raise ScreenConnectionFailedException(
+                    "Unreachable session has been wiped. "
+                    "Please try connecting again"
+                    )
         self.connect()
 
 
@@ -280,7 +283,11 @@ def connectSession(name):
     else:
         s = Screen(name=name)
 
-    s.run()
+    try:
+        s.run()
+    except ScreenConnectionFailedException as e:
+        print("Error: %s" %e)
+
 
 
 def printScreenList(screens):
@@ -444,7 +451,7 @@ def runConnect(name):
         try:
             screen = readSelectionInput("Please enter session number to reattach:", e.args[0])
             screen.run()
-        except UnrecognisedSelectionException as e:
+        except (UnrecognisedSelectionException, ScreenConnectionFailedException) as e:
             print("Error: %s" %e)
 
 
